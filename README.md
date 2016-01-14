@@ -7,7 +7,11 @@ Blackmagic DeckLink SDK addon for openFrameworks
 ### Features
 - Features are similar to [ofxBlackmagic](https://github.com/kylemcdonald/ofxBlackmagic), but this addon supports
  - DeckLink Output for video output
- - DeckLink Input with Fast GPU color conversion and deinterlace
+ - DeckLink Input with Fast GPU color conversion and deinterlace with one shader pass (but working in progress..)
+
+### Known Issues
+- In input, render with scaling does not work. (Shader issue)
+ - If you want to do scale, first draw to fbo whose size is same as video input and then draw the fbo with scaling.
 
 ### Supported System
 - oF 0.9.0 + DesktopVideo_10.5.2 on OSX
