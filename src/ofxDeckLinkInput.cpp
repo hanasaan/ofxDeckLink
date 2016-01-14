@@ -69,35 +69,35 @@ bool Input::setup(int device_id)
 	 }
 	 );
 	
-    string frag_prog = STRINGIFY
-    (
-     uniform sampler2DRect tex;
-     
-     void main (void){
-         float isodd_x = mod(gl_TexCoord[0].x, 2.0);
-         vec2 texcoord0 = gl_TexCoord[0].xy;
-         vec2 texcoord1 = texcoord0 + vec2(1.0, 0.0);
-         float y = 0.0;
-         float u = 0.0;
-         float v = 0.0;
-         
-         vec4 evenfield = texture2DRect(tex, texcoord0);
-         y = evenfield.a;
-         if (isodd_x >= 1.0) {
-             v = evenfield.r - 0.5;
-             u = texture2DRect(tex, texcoord1).r - 0.5;
-         } else {
-             u = evenfield.r - 0.5;
-             v = texture2DRect(tex, texcoord1).r - 0.5;
-         }
-         y = 1.164 * y - 0.0625;
-         gl_FragColor.r = y + 1.596 * v;
-         gl_FragColor.g = y - 0.391 * u - 0.813 * v;
-         gl_FragColor.b = y + 2.018 * u;
-         gl_FragColor.a = 1.0;
-     }
-     );
-    
+	string frag_prog = STRINGIFY
+	(
+	 uniform sampler2DRect tex;
+	 
+	 void main (void){
+		 float isodd_x = mod(gl_TexCoord[0].x, 2.0);
+		 vec2 texcoord0 = gl_TexCoord[0].xy;
+		 vec2 texcoord1 = texcoord0 + vec2(1.0, 0.0);
+		 float y = 0.0;
+		 float u = 0.0;
+		 float v = 0.0;
+		 
+		 vec4 evenfield = texture2DRect(tex, texcoord0);
+		 y = evenfield.a;
+		 if (isodd_x >= 1.0) {
+			 v = evenfield.r - 0.5;
+			 u = texture2DRect(tex, texcoord1).r - 0.5;
+		 } else {
+			 u = evenfield.r - 0.5;
+			 v = texture2DRect(tex, texcoord1).r - 0.5;
+		 }
+		 y = 1.164 * y - 0.0625;
+		 gl_FragColor.r = y + 1.596 * v;
+		 gl_FragColor.g = y - 0.391 * u - 0.813 * v;
+		 gl_FragColor.b = y + 2.018 * u;
+		 gl_FragColor.a = 1.0;
+	 }
+	 );
+	
 	shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
 	shader.linkProgram();
 
@@ -433,20 +433,20 @@ string Input::getFieldDominance() const
 
 void Input::draw(float x, float y) const
 {
-    draw(x, y, getWidth(), getHeight());
+	draw(x, y, getWidth(), getHeight());
 }
 
 void Input::draw(float x, float y, float w, float h) const
 {
-    bool bprog = draw_mode == DRAWMODE_PROGRESSIVE;
-    const ofShader* s = bprog ? &shader_prog : &shader;
-    s->begin();
-    if (!bprog) {
-        bool bufield = draw_mode == DRAWMODE_UPPERFIELD || (draw_mode == DRAWMODE_AUTOFIELD && isFrameNew());
-        s->setUniform1i("use_odd", bufield ? 0 : 1);
-    }
-    tex.draw(x, y);
-    s->end();
+	bool bprog = draw_mode == DRAWMODE_PROGRESSIVE;
+	const ofShader* s = bprog ? &shader_prog : &shader;
+	s->begin();
+	if (!bprog) {
+		bool bufield = draw_mode == DRAWMODE_UPPERFIELD || (draw_mode == DRAWMODE_AUTOFIELD && isFrameNew());
+		s->setUniform1i("use_odd", bufield ? 0 : 1);
+	}
+	tex.draw(x, y);
+	s->end();
 }
 
 OFX_DECKLINK_API_END_NAMESPACE

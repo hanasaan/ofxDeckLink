@@ -7,13 +7,13 @@ OFX_DECKLINK_API_BEGIN_NAMESPACE
 class Input : public IDeckLinkInputCallback, public ofBaseDraws
 {
 public:
-    enum DrawMode
-    {
-        DRAWMODE_PROGRESSIVE,
-        DRAWMODE_UPPERFIELD,
-        DRAWMODE_LOWERFIELD,
-        DRAWMODE_AUTOFIELD // draw upperfield --> lowerfield automatically if interlace
-    };
+	enum DrawMode
+	{
+		DRAWMODE_PROGRESSIVE,
+		DRAWMODE_UPPERFIELD,
+		DRAWMODE_LOWERFIELD,
+		DRAWMODE_AUTOFIELD // draw upperfield --> lowerfield automatically if interlace
+	};
 	
 	Input();
 	~Input();
@@ -46,12 +46,17 @@ public:
 
 	bool isFrameNew() const { return bNewFrame; }
 	
-	void draw(bool is_progressive = true);
-    void draw(float x, float y) const;
-    void draw(float x, float y, float w, float h) const;
-    
-    DrawMode getDrawMode() const { return draw_mode; }
-    void setDrawMode(DrawMode m) { draw_mode = m; }
+	void draw(float x, float y) const;
+	void draw(float x, float y, float w, float h) const;
+	
+	DrawMode getDrawMode() const { return draw_mode; }
+	void setDrawMode(DrawMode m) { draw_mode = m; }
+	
+	ofTexture& getTexture() { return tex; }
+	const ofTexture& getTexture() const { return tex; }
+
+	ofPixels& getPixels() { return vuy_front; }
+	const ofPixels& getPixels() const { return vuy_front; }
 protected:
 	
 	IDeckLink* pDL;
@@ -89,8 +94,8 @@ protected:
 	ofTexture tex;
 	ofShader shader;
 	ofShader shader_prog;
-    
-    DrawMode draw_mode;
+	
+	DrawMode draw_mode;
 public:
 	
 	HRESULT VideoInputFormatChanged (/* in */ BMDVideoInputFormatChangedEvents notificationEvents, /* in */ IDeckLinkDisplayMode *newDisplayMode, /* in */ BMDDetectedVideoInputFormatFlags detectedSignalFlags);
