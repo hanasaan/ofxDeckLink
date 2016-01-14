@@ -9,8 +9,9 @@ public:
         ofSetVerticalSync(true);
         ofSetFrameRate(60);
         
-        input.setup(0);
-        input.start(bmdModeHD1080i5994);
+        if (input.setup(0)) {
+            input.start(bmdModeHD1080i5994);
+        }
     }
     
     void update()
@@ -24,6 +25,7 @@ public:
         input.draw(0, 0, ofGetWidth(), ofGetHeight());
         
         ofDrawBitmapStringHighlight(ofToString(ofGetFrameRate()), 10, 20);
+        ofDrawBitmapStringHighlight(ofToString(input.getDrawMode()), 10, 40);
     }
     
     void keyPressed(int key)
@@ -46,19 +48,12 @@ public:
     }
 };
 
-//#include "ofAppGLFWWindow.h"
 //========================================================================
 int main( ){
-    //    ofAppGLFWWindow window;
-    //    window.setNumSamples(0);
-    //    window.setMultiDisplayFullscreen(true);
-    //    ofSetupOpenGL(&window, 1280, 720, OF_WINDOW);
-    
     ofSetupOpenGL(1280,720,OF_WINDOW);            // <-------- setup the GL context
     
     // this kicks off the running of my app
     // can be OF_WINDOW or OF_FULLSCREEN
     // pass in width and height too:
     ofRunApp(new ofApp());
-    
 }
