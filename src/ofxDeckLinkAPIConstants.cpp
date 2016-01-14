@@ -55,15 +55,15 @@ const char* toString(_BMDPixelFormat mode)
 
 const char* toString(_BMDFieldDominance mode)
 {
-    switch(mode)
-    {
-        TOSTR(bmdUnknownFieldDominance);
-        TOSTR(bmdLowerFieldFirst);
-        TOSTR(bmdUpperFieldFirst);
-        TOSTR(bmdProgressiveFrame);
-        TOSTR(bmdProgressiveSegmentedFrame);
-        default: return "invalid enum";
-    }
+	switch(mode)
+	{
+		TOSTR(bmdUnknownFieldDominance);
+		TOSTR(bmdLowerFieldFirst);
+		TOSTR(bmdUpperFieldFirst);
+		TOSTR(bmdProgressiveFrame);
+		TOSTR(bmdProgressiveSegmentedFrame);
+		default: return "invalid enum";
+	}
 }
 #undef TOSTR
 
