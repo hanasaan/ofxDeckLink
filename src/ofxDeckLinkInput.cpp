@@ -2,7 +2,7 @@
 
 OFX_DECKLINK_API_BEGIN_NAMESPACE
 
-Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), mutex_op(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE)
+Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE)
 {
 }
 
@@ -19,10 +19,6 @@ bool Input::setup(int device_id)
 	
 	if (mutex == NULL)
 		mutex = new ofMutex;
-
-	
-	if (mutex_op == NULL)
-		mutex_op = new ofMutex;
 	
 	string frag = STRINGIFY
 	(
@@ -447,6 +443,22 @@ void Input::draw(float x, float y, float w, float h) const
 	}
 	tex.draw(x, y);
 	s->end();
+}
+
+string Input::getDrawModeString() const
+{
+	switch (draw_mode) {
+		case DRAWMODE_PROGRESSIVE:
+			return "Progressive";
+		case DRAWMODE_UPPERFIELD:
+			return "Upperfield";
+		case DRAWMODE_LOWERFIELD:
+			return "Lowerfield";
+		case DRAWMODE_AUTOFIELD:
+			return "Autofield";
+		default: break;
+	}
+	return "Unknown";
 }
 
 OFX_DECKLINK_API_END_NAMESPACE

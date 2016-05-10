@@ -51,6 +51,7 @@ public:
 	
 	DrawMode getDrawMode() const { return draw_mode; }
 	void setDrawMode(DrawMode m) { draw_mode = m; }
+	string getDrawModeString() const;
 	
 	ofTexture& getTexture() { return tex; }
 	const ofTexture& getTexture() const { return tex; }
@@ -79,7 +80,6 @@ protected:
 	int display_mode_index;
 	
 	ofMutex *mutex;
-	ofMutex *mutex_op;
 	
 	bool initDeckLink(int device_id);
 	
