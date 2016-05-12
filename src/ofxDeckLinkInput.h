@@ -78,6 +78,7 @@ protected:
 	bool do_auto_search;
 	int auto_search_tick;
 	int display_mode_index;
+	int device_id;
 	
 	ofMutex *mutex;
 	

@@ -2,13 +2,21 @@
 
 OFX_DECKLINK_API_BEGIN_NAMESPACE
 
-Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE)
+Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE), device_id(0)
 {
+	if (mutex == NULL)
+		mutex = new ofMutex;
 }
 
 Input::~Input()
 {
 	close();
+	
+	if (mutex != NULL)
+	{
+		delete mutex;
+		mutex = NULL;
+	}
 }
 
 #define STRINGIFY(A) #A
@@ -17,8 +25,6 @@ bool Input::setup(int device_id)
 {
 	close();
 	
-	if (mutex == NULL)
-		mutex = new ofMutex;
 	
 	string frag = STRINGIFY
 	(
@@ -99,6 +105,8 @@ bool Input::setup(int device_id)
 
 	shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog);
 	shader_prog.linkProgram();
+	
+	this->device_id = device_id;
 
 	return initDeckLink(device_id);
 }
@@ -117,12 +125,6 @@ void Input::close()
 	{
 		pDL->Release();
 		pDL = NULL;
-	}
-	
-	if (mutex != NULL)
-	{
-		delete mutex;
-		mutex = NULL;
 	}
 }
 
@@ -246,6 +248,14 @@ bool Input::initDeckLink(int device_id)
 	
 	if (pDLInput->SetCallback(this) != S_OK)
 		goto error;
+	
+	// check features
+	IDeckLinkAttributes* attr;
+	if (pDL->QueryInterface(IID_IDeckLinkAttributes, (void**)&attr) == S_OK) {
+		bool format_detection = true;
+		attr->GetFlag(BMDDeckLinkSupportsInputFormatDetection, &format_detection);
+		ofLogVerbose() << "Input format detection feature : " << format_detection;
+	}
 	
 	bSuccess = TRUE;
 	
@@ -407,8 +417,16 @@ void Input::update()
 			}
 		}
 		
+		if (auto_search_tick == 10) {
+			stop();
+			close();
+		}
+		if (auto_search_tick == 60) {
+			initDeckLink(device_id);
+		}
+		
 		auto_search_tick++;
-		auto_search_tick %= 60;
+		auto_search_tick %= 70;
 	}
 	
 	if (hasValidSignal())
