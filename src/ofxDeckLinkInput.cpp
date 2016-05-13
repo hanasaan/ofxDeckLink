@@ -2,7 +2,7 @@
 
 OFX_DECKLINK_API_BEGIN_NAMESPACE
 
-Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE), device_id(0)
+Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE), device_id(0), auto_search_tick_interval(80)
 {
 	if (mutex == NULL)
 		mutex = new ofMutex;
@@ -417,16 +417,16 @@ void Input::update()
 			}
 		}
 		
-		if (auto_search_tick == 10) {
+		if (auto_search_tick == (int)(0.8 * auto_search_tick_interval)) {
 			stop();
 			close();
 		}
-		if (auto_search_tick == 60) {
+		if (auto_search_tick == (int)(0.9 * auto_search_tick_interval)) {
 			initDeckLink(device_id);
 		}
 		
 		auto_search_tick++;
-		auto_search_tick %= 70;
+		auto_search_tick %= auto_search_tick_interval;
 	}
 	
 	if (hasValidSignal())

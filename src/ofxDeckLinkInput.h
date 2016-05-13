@@ -28,6 +28,7 @@ public:
 	void stop();
 	
 	void startAutoDisplayMode() { do_auto_search = true; auto_search_tick = 0; }
+	void setAutoSearchTickInterval(int tick) { auto_search_tick_interval = tick; }
 	string getCurrentDisplayMode() const;
 	string getFieldDominance() const;
 	
@@ -77,6 +78,7 @@ protected:
 	
 	bool do_auto_search;
 	int auto_search_tick;
+	int auto_search_tick_interval;
 	int display_mode_index;
 	int device_id;
 	
