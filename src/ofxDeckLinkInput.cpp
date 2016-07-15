@@ -459,7 +459,7 @@ void Input::draw(float x, float y, float w, float h) const
 		bool bufield = draw_mode == DRAWMODE_UPPERFIELD || (draw_mode == DRAWMODE_AUTOFIELD && isFrameNew());
 		s->setUniform1i("use_odd", bufield ? 0 : 1);
 	}
-	tex.draw(x, y);
+	tex.draw(x, y, w, h);
 	s->end();
 }
 
