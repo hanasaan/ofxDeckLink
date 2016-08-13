@@ -46,27 +46,30 @@ bool Input::setup(int device_id)
 			 vec4 evenfield_2 = texture2DRect(tex, vec2(texcoord0.x, texcoord0.y - 1.0));
 			 y = mix(evenfield.a, evenfield_2.a, 0.5);
 			 if (isodd_x >= 1.0) {
-				 v = mix(evenfield.r, evenfield_2.r, 0.5) - 0.5;
-				 u = texture2DRect(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r - 0.5;
+				 v = mix(evenfield.r, evenfield_2.r, 0.5);
+				 u = texture2DRect(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r;
 			 } else {
-				 u = mix(evenfield.r, evenfield_2.r, 0.5) - 0.5;
-				 v = texture2DRect(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r - 0.5;
+				 u = mix(evenfield.r, evenfield_2.r, 0.5);
+				 v = texture2DRect(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r;
 			 }
 		 } else {
 			 evenfield = texture2DRect(tex, texcoord0);
 			 y = evenfield.a;
 			 if (isodd_x >= 1.0) {
-				 v = evenfield.r - 0.5;
-				 u = texture2DRect(tex, texcoord1).r - 0.5;
+				 v = evenfield.r;
+				 u = texture2DRect(tex, texcoord1).r;
 			 } else {
-				 u = evenfield.r - 0.5;
-				 v = texture2DRect(tex, texcoord1).r - 0.5;
+				 u = evenfield.r;
+				 v = texture2DRect(tex, texcoord1).r;
 			 }
 		 }
-		 y = 1.164 * y - 0.0625;
-		 gl_FragColor.r = y + 1.596 * v;
-		 gl_FragColor.g = y - 0.391 * u - 0.813 * v;
-		 gl_FragColor.b = y + 2.018 * u;
+         y = clamp(y, 0.06274509803922, 0.94117647058824);
+         u = clamp(u, 0.06274509803922, 0.92156862745098) - 0.5;
+         v = clamp(v, 0.06274509803922, 0.92156862745098) - 0.5;
+         y = 1.164 * (y - 0.06274509803922);
+         gl_FragColor.r = clamp(y + 1.793 * v, 0.0, 1.0);
+         gl_FragColor.g = clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
+         gl_FragColor.b = clamp(y + 2.155 * u, 0.0, 1.0);
 		 gl_FragColor.a = 1.0;
 	 }
 	 );
@@ -86,16 +89,19 @@ bool Input::setup(int device_id)
 		 vec4 evenfield = texture2DRect(tex, texcoord0);
 		 y = evenfield.a;
 		 if (isodd_x >= 1.0) {
-			 v = evenfield.r - 0.5;
-			 u = texture2DRect(tex, texcoord1).r - 0.5;
+			 v = evenfield.r;
+			 u = texture2DRect(tex, texcoord1).r;
 		 } else {
-			 u = evenfield.r - 0.5;
-			 v = texture2DRect(tex, texcoord1).r - 0.5;
+			 u = evenfield.r;
+			 v = texture2DRect(tex, texcoord1).r;
 		 }
-		 y = 1.164 * y - 0.0625;
-		 gl_FragColor.r = y + 1.596 * v;
-		 gl_FragColor.g = y - 0.391 * u - 0.813 * v;
-		 gl_FragColor.b = y + 2.018 * u;
+         y = clamp(y, 0.06274509803922, 0.94117647058824);
+         u = clamp(u, 0.06274509803922, 0.92156862745098) - 0.5;
+         v = clamp(v, 0.06274509803922, 0.92156862745098) - 0.5;
+         y = 1.164 * (y - 0.06274509803922);
+         gl_FragColor.r = clamp(y + 1.793 * v, 0.0, 1.0);
+         gl_FragColor.g = clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
+         gl_FragColor.b = clamp(y + 2.155 * u, 0.0, 1.0);
 		 gl_FragColor.a = 1.0;
 	 }
 	 );
