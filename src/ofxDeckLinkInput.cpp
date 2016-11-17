@@ -67,10 +67,10 @@ bool Input::setup(int device_id)
          u = clamp(u, 0.06274509803922, 0.92156862745098) - 0.5;
          v = clamp(v, 0.06274509803922, 0.92156862745098) - 0.5;
          y = 1.164 * (y - 0.06274509803922);
-         gl_FragColor.r = clamp(y + 1.793 * v, 0.0, 1.0);
-         gl_FragColor.g = clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
-         gl_FragColor.b = clamp(y + 2.155 * u, 0.0, 1.0);
-		 gl_FragColor.a = 1.0;
+         gl_FragColor = gl_Color;
+         gl_FragColor.r *= clamp(y + 1.793 * v, 0.0, 1.0);
+         gl_FragColor.g *= clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
+         gl_FragColor.b *= clamp(y + 2.155 * u, 0.0, 1.0);
 	 }
 	 );
 	
@@ -99,10 +99,10 @@ bool Input::setup(int device_id)
          u = clamp(u, 0.06274509803922, 0.92156862745098) - 0.5;
          v = clamp(v, 0.06274509803922, 0.92156862745098) - 0.5;
          y = 1.164 * (y - 0.06274509803922);
-         gl_FragColor.r = clamp(y + 1.793 * v, 0.0, 1.0);
-         gl_FragColor.g = clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
-         gl_FragColor.b = clamp(y + 2.155 * u, 0.0, 1.0);
-		 gl_FragColor.a = 1.0;
+         gl_FragColor = gl_Color;
+         gl_FragColor.r *= clamp(y + 1.793 * v, 0.0, 1.0);
+         gl_FragColor.g *= clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
+         gl_FragColor.b *= clamp(y + 2.155 * u, 0.0, 1.0);
 	 }
 	 );
 	
