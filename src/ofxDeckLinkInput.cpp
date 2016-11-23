@@ -25,7 +25,6 @@ bool Input::setup(int device_id)
 {
 	close();
 	
-	
 	string frag = STRINGIFY
 	(
 	 uniform sampler2DRect tex;
@@ -106,14 +105,124 @@ bool Input::setup(int device_id)
 	 }
 	 );
 	
-	shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
+	string vert150 = "#version 150\n";
+	vert150 += STRINGIFY
+	(
+	 in vec4 position;
+	 in vec2 texcoord;
+	 
+	 out vec2 texCoordVarying;
+	 
+	 uniform mat4 modelViewProjectionMatrix;
+	 
+	 void main()
+	 {
+		 texCoordVarying = texcoord;
+		 gl_Position = modelViewProjectionMatrix * position;
+	 }
+	 );
+	
+	string frag150 = "#version 150\n";
+	frag150 += STRINGIFY
+	(
+	 in vec2 texCoordVarying;
+	 
+	 out vec4 fragColor;
+	 
+	 uniform sampler2DRect tex;
+	 uniform int use_odd;
+	 
+	 void main (void){
+		 float isodd_x = mod(texCoordVarying.x, 2.0);
+		 float isodd_y = mod(texCoordVarying.y, 2.0);
+		 vec2 texcoord0 = texCoordVarying.xy;
+		 vec2 texcoord1 = texcoord0 + vec2(1.0, 0.0);
+		 float y = 0.0;
+		 float u = 0.0;
+		 float v = 0.0;
+		 
+		 vec4 evenfield;
+		 if((bool(use_odd) && isodd_y < 1.0) || (!bool(use_odd) && isodd_y >= 1.0)){
+			 evenfield = texture(tex, vec2(texcoord0.x, texcoord0.y + 1.0));
+			 vec4 evenfield_2 = texture(tex, vec2(texcoord0.x, texcoord0.y - 1.0));
+			 y = mix(evenfield.a, evenfield_2.a, 0.5);
+			 if (isodd_x >= 1.0) {
+				 v = mix(evenfield.r, evenfield_2.r, 0.5) - 0.5;
+				 u = texture(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r - 0.5;
+			 } else {
+				 u = mix(evenfield.r, evenfield_2.r, 0.5) - 0.5;
+				 v = texture(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r - 0.5;
+			 }
+		 } else {
+			 evenfield = texture(tex, texcoord0);
+			 y = evenfield.a;
+			 if (isodd_x >= 1.0) {
+				 v = evenfield.r - 0.5;
+				 u = texture(tex, texcoord1).r - 0.5;
+			 } else {
+				 u = evenfield.r - 0.5;
+				 v = texture(tex, texcoord1).r - 0.5;
+			 }
+		 }
+		 y = 1.164 * y - 0.0625;
+		 fragColor.r = y + 1.596 * v;
+		 fragColor.g = y - 0.391 * u - 0.813 * v;
+		 fragColor.b = y + 2.018 * u;
+		 fragColor.a = 1.0;
+	 }
+	 );
+	
+	string frag_prog150 = "#version 150\n";
+	frag_prog150 += STRINGIFY
+	(
+	 in vec2 texCoordVarying;
+	 
+	 out vec4 fragColor;
+	 
+	 uniform sampler2DRect tex;
+	 
+	 void main (void){
+		 float isodd_x = mod(texCoordVarying.x, 2.0);
+		 vec2 texcoord0 = texCoordVarying.xy;
+		 vec2 texcoord1 = texcoord0 + vec2(1.0, 0.0);
+		 float y = 0.0;
+		 float u = 0.0;
+		 float v = 0.0;
+		 
+		 vec4 evenfield = texture(tex, texcoord0);
+		 y = evenfield.a;
+		 if (isodd_x >= 1.0) {
+			 v = evenfield.r - 0.5;
+			 u = texture(tex, texcoord1).r - 0.5;
+		 } else {
+			 u = evenfield.r - 0.5;
+			 v = texture(tex, texcoord1).r - 0.5;
+		 }
+		 y = 1.164 * y - 0.0625;
+		 fragColor.r = y + 1.596 * v;
+		 fragColor.g = y - 0.391 * u - 0.813 * v;
+		 fragColor.b = y + 2.018 * u;
+		 fragColor.a = 1.0;
+	 }
+	 );
+	
+	if(ofIsGLProgrammableRenderer()){
+		shader.setupShaderFromSource(GL_VERTEX_SHADER, vert150);
+		shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag150);
+		shader.bindDefaults();
+		
+		shader_prog.setupShaderFromSource(GL_VERTEX_SHADER, vert150);
+		shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog150);
+		shader_prog.bindDefaults();
+	}else{
+		shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
+		shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog);
+	}
 	shader.linkProgram();
-
-	shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog);
 	shader_prog.linkProgram();
 	
 	this->device_id = device_id;
-
+	
 	return initDeckLink(device_id);
 }
 
@@ -164,12 +273,12 @@ bool Input::start(BMDDisplayMode mode)
 	
 	vuy_back.allocate(width, height, 2);
 	vuy_front.allocate(width, height, 2);
-
+	
 	
 	pDLDisplayMode->GetFrameRate(&frameDuration, &frameTimescale);
 	
 	pDLInput->DisableAudioInput();
-
+	
 	if (pDLInput->EnableVideoInput(pDLDisplayMode->GetDisplayMode(), pixelFormat, bmdVideoInputFlagDefault) != S_OK)
 		return false;
 	
@@ -365,7 +474,7 @@ void Input::update()
 	{
 		bNewFrame = false;
 		lastFrameNo = ofGetFrameNum();
-	}	
+	}
 	if (bNewBuffer) {
 		mutex->lock();
 		tex.loadData(vuy_front);
@@ -407,7 +516,7 @@ void Input::update()
 				bmdModeNTSCp,
 				bmdModePALp
 			};
-
+			
 			int num_display_mode = sizeof(modes) / sizeof(_BMDDisplayMode);
 			
 			ofLogNotice("ofxDeckLinkAPI::Input") << "trying display mode: " << toString(modes[display_mode_index]);
