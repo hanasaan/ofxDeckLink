@@ -22,7 +22,7 @@ public:
 	void close();
 	
 	void listDisplayMode();
-	bool start(BMDDisplayMode mode = bmdModeHD1080p30);
+	bool start(BMDDisplayMode mode = bmdModeHD1080p30, bool use_rgb_colorspace = false);
 	void pause();
 	void resume();
 	void stop();
@@ -57,8 +57,10 @@ public:
 	ofTexture& getTexture() { return tex; }
 	const ofTexture& getTexture() const { return tex; }
 
-	ofPixels& getPixels() { return vuy_front; }
-	const ofPixels& getPixels() const { return vuy_front; }
+	ofPixels& getPixels() { return pix_front; }
+	const ofPixels& getPixels() const { return pix_front; }
+    
+    bool isRGBColorSpace() const { return b_use_rgb_colorspace; }
 protected:
 	
 	IDeckLink* pDL;
@@ -92,13 +94,18 @@ protected:
 	bool bNewFrame;
 	int lastFrameNo;
 
-	ofPixels vuy_front;
-	ofPixels vuy_back;
-	ofTexture tex;
+	ofPixels pix_front;
+	ofPixels pix_back;
+    
+    ofTexture tex;
 	ofShader shader;
 	ofShader shader_prog;
+    ofShader shader_argb;
+    ofShader shader_argb_prog;
 	
 	DrawMode draw_mode;
+    
+    bool b_use_rgb_colorspace;
 public:
 	
 	HRESULT VideoInputFormatChanged (/* in */ BMDVideoInputFormatChangedEvents notificationEvents, /* in */ IDeckLinkDisplayMode *newDisplayMode, /* in */ BMDDetectedVideoInputFormatFlags detectedSignalFlags);

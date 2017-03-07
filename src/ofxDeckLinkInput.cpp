@@ -2,7 +2,8 @@
 
 OFX_DECKLINK_API_BEGIN_NAMESPACE
 
-Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE), device_id(0), auto_search_tick_interval(80)
+Input::Input() : pDL(NULL), pDLInput(NULL), mutex(NULL), valid_signal(false), do_auto_search(false), auto_search_tick(0), display_mode_index(0), width(0), height(0),draw_mode(DRAWMODE_PROGRESSIVE), device_id(0), auto_search_tick_interval(80),
+    b_use_rgb_colorspace(false)
 {
 	if (mutex == NULL)
 		mutex = new ofMutex;
@@ -24,7 +25,6 @@ Input::~Input()
 bool Input::setup(int device_id)
 {
 	close();
-	
 	
 	string frag = STRINGIFY
 	(
@@ -106,12 +106,52 @@ bool Input::setup(int device_id)
 	 }
 	 );
 	
+    string frag_argb = STRINGIFY
+    (
+     uniform sampler2DRect tex;
+     uniform int use_odd;
+     
+     void main (void){
+         float isodd_y = mod(gl_TexCoord[0].y, 2.0);
+         vec2 texcoord0 = gl_TexCoord[0].xy;
+         vec3 rgb;
+         vec4 evenfield;
+         if((bool(use_odd) && isodd_y < 1.0) || (!bool(use_odd) && isodd_y >= 1.0)){
+             evenfield = texture2DRect(tex, vec2(texcoord0.x, texcoord0.y + 1.0));
+             vec4 evenfield_2 = texture2DRect(tex, vec2(texcoord0.x, texcoord0.y - 1.0));
+             rgb = mix(evenfield.rgb, evenfield_2.rgb, 0.5);
+         } else {
+             evenfield = texture2DRect(tex, texcoord0);
+             rgb = evenfield.rgb;
+         }
+         gl_FragColor = gl_Color;
+         gl_FragColor.rgb *= rgb;
+     }
+     );
+    
+    string frag_argb_prog = STRINGIFY
+    (
+     uniform sampler2DRect tex;
+     
+     void main (void){
+         vec2 texcoord0 = gl_TexCoord[0].xy;
+         gl_FragColor = gl_Color;
+         gl_FragColor.rgb *= texture2DRect(tex, texcoord0).rgb;
+     }
+     );
+    
 	shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
 	shader.linkProgram();
 
 	shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog);
 	shader_prog.linkProgram();
 	
+    shader_argb.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb);
+    shader_argb.linkProgram();
+    
+    shader_argb_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb_prog);
+    shader_argb_prog.linkProgram();
+    
 	this->device_id = device_id;
 
 	return initDeckLink(device_id);
@@ -134,7 +174,7 @@ void Input::close()
 	}
 }
 
-bool Input::start(BMDDisplayMode mode)
+bool Input::start(BMDDisplayMode mode, bool use_rgb_colorspace)
 {
 	stop();
 	
@@ -142,10 +182,11 @@ bool Input::start(BMDDisplayMode mode)
 	bNewFrame = false;
 	timestamp = 0;
 	lastFrameNo = -1;
+    b_use_rgb_colorspace = use_rgb_colorspace;
 	
 	this->mode = (_BMDDisplayMode)mode;
 	
-	BMDPixelFormat pixelFormat = bmdFormat8BitYUV;
+    BMDPixelFormat pixelFormat = b_use_rgb_colorspace ? bmdFormat8BitARGB : bmdFormat8BitYUV;
 	
 	IDeckLinkDisplayMode* pDLDisplayMode = NULL;
 	BMDDisplayModeSupport result;
@@ -162,23 +203,46 @@ bool Input::start(BMDDisplayMode mode)
 	height = pDLDisplayMode->GetHeight();
 	fieldDominance = (_BMDFieldDominance)pDLDisplayMode->GetFieldDominance();
 	
-	vuy_back.allocate(width, height, 2);
-	vuy_front.allocate(width, height, 2);
-
+    if (b_use_rgb_colorspace) {
+        pix_back.allocate(width, height, 4);
+        pix_back.set(255);
+        pix_front.allocate(width, height, 4);
+        pix_front.set(255);
+    } else {
+        pix_back.allocate(width, height, 2);
+        pix_front.allocate(width, height, 2);
+    }
 	
 	pDLDisplayMode->GetFrameRate(&frameDuration, &frameTimescale);
 	
 	pDLInput->DisableAudioInput();
+    
+    // check features
+    IDeckLinkAttributes* attr;
+    bool format_detection = false;
+    if (pDL->QueryInterface(IID_IDeckLinkAttributes, (void**)&attr) == S_OK) {
+        attr->GetFlag(BMDDeckLinkSupportsInputFormatDetection, &format_detection);
+        ofLogVerbose() << "Input format detection feature : " << format_detection;
+    }
 
-	if (pDLInput->EnableVideoInput(pDLDisplayMode->GetDisplayMode(), pixelFormat, bmdVideoInputFlagDefault) != S_OK)
-		return false;
+    if (pDLInput->EnableVideoInput(pDLDisplayMode->GetDisplayMode(), pixelFormat, format_detection ? bmdVideoInputEnableFormatDetection : bmdVideoInputFlagDefault) != S_OK) {
+        ofLogError("ofxDeckLinkAPI::Input") << "invalid enable video input";
+        return false;
+    }
 	
-	pDLInput->StartStreams();
+    if (pDLInput->StartStreams() != S_OK) {
+        ofLogError("ofxDeckLinkAPI::Input") << "invalid start streams";
+        return false;
+    }
 	
 	shader.begin();
 	shader.setUniform1i("use_odd", 0);
 	shader.end();
 	
+    shader_argb.begin();
+    shader_argb.setUniform1i("use_odd", 0);
+    shader_argb.end();
+    
 	return true;
 }
 
@@ -255,14 +319,6 @@ bool Input::initDeckLink(int device_id)
 	if (pDLInput->SetCallback(this) != S_OK)
 		goto error;
 	
-	// check features
-	IDeckLinkAttributes* attr;
-	if (pDL->QueryInterface(IID_IDeckLinkAttributes, (void**)&attr) == S_OK) {
-		bool format_detection = true;
-		attr->GetFlag(BMDDeckLinkSupportsInputFormatDetection, &format_detection);
-		ofLogVerbose() << "Input format detection feature : " << format_detection;
-	}
-	
 	bSuccess = TRUE;
 	
 error:
@@ -335,7 +391,81 @@ void Input::listDisplayMode()
 
 HRESULT Input::VideoInputFormatChanged(BMDVideoInputFormatChangedEvents notificationEvents, IDeckLinkDisplayMode *newDisplayMode, BMDDetectedVideoInputFormatFlags detectedSignalFlags)
 {
-	cerr << "VideoInputFormatChanged" << endl;
+    BMDPixelFormat pixelFormat = bmdFormat8BitYUV;
+    
+    // Check for video field changes
+    if (notificationEvents & bmdVideoInputFieldDominanceChanged)
+    {
+        BMDFieldDominance fieldDominance;
+        
+        fieldDominance = newDisplayMode->GetFieldDominance();
+        printf("Input field dominance changed to ");
+        switch (fieldDominance) {
+            case bmdUnknownFieldDominance:
+                printf("unknown\n");
+                break;
+            case bmdLowerFieldFirst:
+                printf("lower field first\n");
+                break;
+            case bmdUpperFieldFirst:
+                printf("upper field first\n");
+                break;
+            case bmdProgressiveFrame:
+                printf("progressive\n");
+                break;
+            case bmdProgressiveSegmentedFrame:
+                printf("progressive segmented frame\n");
+                break;
+            default:
+                break;
+        }
+    }
+    
+    // Check if the pixel format has changed
+    if (notificationEvents & bmdVideoInputColorspaceChanged)
+    {
+        printf("Input color space changed to ");
+        if (detectedSignalFlags == bmdDetectedVideoInputYCbCr422)
+        {
+            printf("YCbCr422\n");
+            pixelFormat = bmdFormat8BitYUV;
+            b_use_rgb_colorspace = false;
+        }
+        if (detectedSignalFlags == bmdDetectedVideoInputRGB444)
+        {
+            printf("RGB444\n");
+            pixelFormat = bmdFormat8BitARGB;
+            b_use_rgb_colorspace = true;
+        }
+    }
+    
+    if (b_use_rgb_colorspace) {
+        pix_back.allocate(width, height, 4);
+        pix_back.set(255);
+        pix_front.allocate(width, height, 4);
+        pix_front.set(255);
+    } else {
+        pix_back.allocate(width, height, 2);
+        pix_front.allocate(width, height, 2);
+    }
+    
+    
+    // Check if the video mode has changed
+    if (notificationEvents & bmdVideoInputDisplayModeChanged)
+    {
+    }
+    
+    // Pause video capture
+    pDLInput->PauseStreams();
+    
+    // Enable video input with the properties of the new video stream
+    pDLInput->EnableVideoInput(newDisplayMode->GetDisplayMode(), pixelFormat, bmdVideoInputEnableFormatDetection);
+    
+    // Flush any queued video frames
+    pDLInput->FlushStreams();
+    
+    // Start video capture
+    pDLInput->StartStreams();
 }
 
 HRESULT Input::VideoInputFrameArrived(IDeckLinkVideoInputFrame* videoFrame, IDeckLinkAudioInputPacket* audioPacket)
@@ -346,14 +476,19 @@ HRESULT Input::VideoInputFrameArrived(IDeckLinkVideoInputFrame* videoFrame, IDec
 	}
 	timestamp = ofGetSystemTime();
 	
-	void *src = NULL;
-	videoFrame->GetBytes(&src);
+    BMDPixelFormat format = videoFrame->GetPixelFormat();
+	unsigned char *src = NULL;
+	videoFrame->GetBytes((void**)&src);
 	
-	unsigned char *dst = vuy_back.getPixels();
-	memcpy(dst, src, width * height * 2);
+	unsigned char *dst = pix_back.getData();
+    if (format == bmdFormat8BitARGB) {
+        memcpy(dst, &src[1], width * height * 4 - 1);
+    } else {
+        memcpy(dst, src, width * height * 2);
+    }
 	
 	mutex->lock();
-	vuy_back.swap(vuy_front);
+	pix_back.swap(pix_front);
 	bNewBuffer = true;
 	mutex->unlock();
 	return S_OK;
@@ -368,7 +503,7 @@ void Input::update()
 	}	
 	if (bNewBuffer) {
 		mutex->lock();
-		tex.loadData(vuy_front);
+		tex.loadData(pix_front);
 		bNewBuffer = false;
 		mutex->unlock();
 		bNewFrame = true;
@@ -458,15 +593,27 @@ void Input::draw(float x, float y) const
 
 void Input::draw(float x, float y, float w, float h) const
 {
-	bool bprog = draw_mode == DRAWMODE_PROGRESSIVE;
-	const ofShader* s = bprog ? &shader_prog : &shader;
-	s->begin();
-	if (!bprog) {
-		bool bufield = draw_mode == DRAWMODE_UPPERFIELD || (draw_mode == DRAWMODE_AUTOFIELD && isFrameNew());
-		s->setUniform1i("use_odd", bufield ? 0 : 1);
-	}
-	tex.draw(x, y, w, h);
-	s->end();
+    if (b_use_rgb_colorspace) {
+        bool bprog = draw_mode == DRAWMODE_PROGRESSIVE;
+        const ofShader* s = bprog ? &shader_argb_prog : &shader_argb;
+        s->begin();
+        if (!bprog) {
+            bool bufield = draw_mode == DRAWMODE_UPPERFIELD || (draw_mode == DRAWMODE_AUTOFIELD && isFrameNew());
+            s->setUniform1i("use_odd", bufield ? 0 : 1);
+        }
+        tex.draw(x, y, w, h);
+        s->end();
+    } else {
+        bool bprog = draw_mode == DRAWMODE_PROGRESSIVE;
+        const ofShader* s = bprog ? &shader_prog : &shader;
+        s->begin();
+        if (!bprog) {
+            bool bufield = draw_mode == DRAWMODE_UPPERFIELD || (draw_mode == DRAWMODE_AUTOFIELD && isFrameNew());
+            s->setUniform1i("use_odd", bufield ? 0 : 1);
+        }
+        tex.draw(x, y, w, h);
+        s->end();
+    }
 }
 
 string Input::getDrawModeString() const
