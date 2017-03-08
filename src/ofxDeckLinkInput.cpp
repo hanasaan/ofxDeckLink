@@ -439,6 +439,13 @@ HRESULT Input::VideoInputFormatChanged(BMDVideoInputFormatChangedEvents notifica
         }
     }
     
+    // Check if the video mode has changed
+    if (notificationEvents & bmdVideoInputDisplayModeChanged)
+    {
+        width = newDisplayMode->GetWidth();
+        height = newDisplayMode->GetHeight();
+    }
+    
     if (b_use_rgb_colorspace) {
         pix_back.allocate(width, height, 4);
         pix_back.set(255);
@@ -449,11 +456,6 @@ HRESULT Input::VideoInputFormatChanged(BMDVideoInputFormatChangedEvents notifica
         pix_front.allocate(width, height, 2);
     }
     
-    
-    // Check if the video mode has changed
-    if (notificationEvents & bmdVideoInputDisplayModeChanged)
-    {
-    }
     
     // Pause video capture
     pDLInput->PauseStreams();
