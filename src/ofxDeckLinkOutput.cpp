@@ -141,7 +141,7 @@ bool Output::startDeckLink(BMDDisplayMode mode)
 	if (pDLOutput->EnableVideoOutput(pDLDisplayMode->GetDisplayMode(), bmdVideoOutputFlagDefault) != S_OK)
 		return false;
 	
-	if (pDLOutput->CreateVideoFrame(uiFrameWidth, uiFrameHeight, uiFrameWidth*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &pDLVideoFrame) != S_OK)
+	if (pDLOutput->CreateVideoFrame(uiFrameWidth, uiFrameHeight, uiFrameWidth*4, bmdFormat8BitARGB, bmdFrameFlagDefault, &pDLVideoFrame) != S_OK)
 		return false;
 	
 	uiTotalFrames = 0;
@@ -222,7 +222,15 @@ void Output::publishTexture(ofTexture &tex)
 		&& tex.getHeight() == uiFrameHeight)
 	{
 		mutex->lock();
-		tex.readToPixels(*back_buffer);
+        if (!back_buffer->isAllocated() ||
+            back_buffer->getWidth() != tex.getWidth() ||
+            back_buffer->getHeight() != tex.getHeight()) {
+            back_buffer->allocate(tex.getWidth(), tex.getHeight(), 4);
+        }
+        ofPixels pix2;
+        pix2.setFromExternalPixels(&back_buffer->getData()[1], tex.getWidth(),
+                                   tex.getHeight(), back_buffer->getNumChannels());
+        tex.readToPixels(pix2);
 		
 		if (back_buffer->getNumChannels() != 4)
 			back_buffer->setNumChannels(4);
@@ -243,7 +251,13 @@ void Output::publishPixels(ofPixels &pix)
 		&& pix.getHeight() == uiFrameHeight)
 	{
 		mutex->lock();
-		*back_buffer = pix;
+        if (!back_buffer->isAllocated() ||
+            back_buffer->getWidth() != pix.getWidth() ||
+            back_buffer->getHeight() != pix.getHeight()) {
+            back_buffer->allocate(pix.getWidth(), pix.getHeight(), pix.getNumChannels());
+        }
+        memcpy(&back_buffer->getData()[1], pix.getData(), pix.size());
+        //*back_buffer = pix;
 		
 		if (back_buffer->getNumChannels() != 4)
 			back_buffer->setNumChannels(4);
