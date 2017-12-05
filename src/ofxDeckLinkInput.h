@@ -61,6 +61,9 @@ public:
 	const ofPixels& getPixels() const { return pix_front; }
     
     bool isRGBColorSpace() const { return b_use_rgb_colorspace; }
+    
+    const Timecode& getTimecode() const { return tc_front; }
+    string getTimecodeString() const;
 protected:
 	
 	IDeckLink* pDL;
@@ -106,6 +109,9 @@ protected:
 	DrawMode draw_mode;
     
     bool b_use_rgb_colorspace;
+    
+    Timecode tc_back;
+    Timecode tc_front;
 public:
 	
 	virtual HRESULT VideoInputFormatChanged (/* in */ BMDVideoInputFormatChangedEvents notificationEvents, /* in */ IDeckLinkDisplayMode *newDisplayMode, /* in */ BMDDetectedVideoInputFormatFlags detectedSignalFlags);

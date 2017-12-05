@@ -479,7 +479,8 @@ HRESULT Input::VideoInputFrameArrived(IDeckLinkVideoInputFrame* videoFrame, IDec
 	timestamp = ofGetSystemTime();
 	
     BMDPixelFormat format = videoFrame->GetPixelFormat();
-	unsigned char *src = NULL;
+    IDeckLinkTimecode* timecode_ptr = nullptr;
+    unsigned char *src = NULL;
 	videoFrame->GetBytes((void**)&src);
 	
 	unsigned char *dst = pix_back.getData();
@@ -491,6 +492,16 @@ HRESULT Input::VideoInputFrameArrived(IDeckLinkVideoInputFrame* videoFrame, IDec
 	
 	mutex->lock();
 	pix_back.swap(pix_front);
+    if (videoFrame->GetTimecode(bmdTimecodeRP188Any, &timecode_ptr) == S_OK) {
+        timecode_ptr->GetComponents(&tc_back.hours,
+                                    &tc_back.minutes,
+                                    &tc_back.seconds,
+                                    &tc_back.frames);
+        BMDTimecodeFlags flags = timecode_ptr->GetFlags();
+        if (flags == bmdTimecodeIsDropFrame) {
+            tc_back.b_drop_frame = true;
+        }
+    }
 	bNewBuffer = true;
 	mutex->unlock();
 	return S_OK;
@@ -506,7 +517,8 @@ void Input::update()
 	if (bNewBuffer) {
 		mutex->lock();
 		tex.loadData(pix_front);
-		bNewBuffer = false;
+        tc_front = tc_back;
+        bNewBuffer = false;
 		mutex->unlock();
 		bNewFrame = true;
 	}
@@ -633,5 +645,23 @@ string Input::getDrawModeString() const
 	}
 	return "Unknown";
 }
+
+string Input::getTimecodeString() const
+{
+    if (tc_front.b_drop_frame) {
+        return ofVAArgsToString("%02d:%02d:%02d;%02d",
+                                tc_front.hours,
+                                tc_front.minutes,
+                                tc_front.seconds,
+                                tc_front.frames);
+    } else {
+        return ofVAArgsToString("%02d:%02d:%02d:%02d",
+                                tc_front.hours,
+                                tc_front.minutes,
+                                tc_front.seconds,
+                                tc_front.frames);
+    }
+}
+
 
 OFX_DECKLINK_API_END_NAMESPACE

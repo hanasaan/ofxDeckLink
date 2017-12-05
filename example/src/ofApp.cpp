@@ -26,6 +26,7 @@ public:
         
         ofDrawBitmapStringHighlight(ofToString(ofGetFrameRate()), 10, 20);
         ofDrawBitmapStringHighlight(ofToString(input.getDrawMode()), 10, 40);
+        ofDrawBitmapStringHighlight(input.getTimecodeString(), 10, 60);
     }
     
     void keyPressed(int key)
