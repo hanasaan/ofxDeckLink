@@ -67,4 +67,19 @@ const char* toString(_BMDFieldDominance mode)
 }
 #undef TOSTR
 
+int Timecode::toFrameNum(int timebase) const
+{
+    int num = frames + timebase * seconds + timebase * 60 * minutes + timebase * 3600 * hours;
+    if (b_drop_frame) {
+        num -= hours * 108;
+        for (int i=0; i<=minutes; ++i) {
+            if (i % 10 != 0) {
+                num -= 2;
+            }
+        }
+    }
+    return num;
+}
+
+
 OFX_DECKLINK_API_END_NAMESPACE

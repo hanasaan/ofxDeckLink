@@ -20,6 +20,8 @@ struct Timecode
     uint8_t seconds;
     uint8_t frames;
     bool b_drop_frame;
+    
+    int toFrameNum(int timebase) const;
 };
 
 OFX_DECKLINK_API_END_NAMESPACE
