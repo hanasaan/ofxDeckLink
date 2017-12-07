@@ -9,6 +9,7 @@ class Output : public IDeckLinkVideoOutputCallback
 public:
 	
 	Output();
+    ~Output();
 	
 	bool setup(int device_id = 0);
 	void close();

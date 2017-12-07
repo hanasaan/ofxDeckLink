@@ -6,6 +6,11 @@ Output::Output() : pDL(NULL), pDLOutput(NULL), pDLVideoFrame(NULL), has_new_fram
 {
 }
 
+Output::~Output()
+{
+    close();
+}
+
 bool Output::setup(int device_id)
 {
 	close();
