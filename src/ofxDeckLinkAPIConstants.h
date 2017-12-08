@@ -20,6 +20,7 @@ struct Timecode
     uint8_t seconds;
     uint8_t frames;
     bool b_drop_frame;
+    Timecode();
     
     int toFrameNum(int timebase) const;
 };

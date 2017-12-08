@@ -67,6 +67,15 @@ const char* toString(_BMDFieldDominance mode)
 }
 #undef TOSTR
 
+Timecode::Timecode()
+{
+    hours = 0;
+    minutes = 0;
+    seconds = 0;
+    frames = 0;
+    b_drop_frame = true;
+}
+
 int Timecode::toFrameNum(int timebase) const
 {
     int num = frames + timebase * seconds + timebase * 60 * minutes + timebase * 3600 * hours;
