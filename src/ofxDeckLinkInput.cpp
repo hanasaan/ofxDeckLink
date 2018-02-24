@@ -140,17 +140,188 @@ bool Input::setup(int device_id)
      }
      );
     
-	shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
-	shader.linkProgram();
-
-	shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog);
-	shader_prog.linkProgram();
-	
-    shader_argb.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb);
-    shader_argb.linkProgram();
     
-    shader_argb_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb_prog);
+    string vert150 = "#version 150\n";
+    vert150 += STRINGIFY
+    (
+     in vec4 position;
+     in vec2 texcoord;
+     
+     out vec2 texCoordVarying;
+     
+     uniform mat4 modelViewProjectionMatrix;
+     
+     void main()
+     {
+         texCoordVarying = texcoord;
+         gl_Position = modelViewProjectionMatrix * position;
+     }
+     );
+    
+    string frag150 = "#version 150\n";
+    frag150 += STRINGIFY
+    (
+     in vec2 texCoordVarying;
+     
+     out vec4 fragColor;
+     
+     uniform sampler2DRect tex;
+     uniform int use_odd;
+     
+     void main (void){
+         float isodd_x = mod(texCoordVarying.x, 2.0);
+         float isodd_y = mod(texCoordVarying.y, 2.0);
+         vec2 texcoord0 = texCoordVarying.xy;
+         vec2 texcoord1 = texcoord0 + vec2(1.0, 0.0);
+         float y = 0.0;
+         float u = 0.0;
+         float v = 0.0;
+         
+         vec4 evenfield;
+         if((bool(use_odd) && isodd_y < 1.0) || (!bool(use_odd) && isodd_y >= 1.0)){
+             evenfield = texture(tex, vec2(texcoord0.x, texcoord0.y + 1.0));
+             vec4 evenfield_2 = texture(tex, vec2(texcoord0.x, texcoord0.y - 1.0));
+             y = mix(evenfield.a, evenfield_2.a, 0.5);
+             if (isodd_x >= 1.0) {
+                 v = mix(evenfield.r, evenfield_2.r, 0.5);
+                 u = texture(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r;
+             } else {
+                 u = mix(evenfield.r, evenfield_2.r, 0.5);
+                 v = texture(tex, vec2(texcoord1.x, texcoord1.y + 1.0)).r;
+             }
+         } else {
+             evenfield = texture(tex, texcoord0);
+             y = evenfield.a;
+             if (isodd_x >= 1.0) {
+                 v = evenfield.r;
+                 u = texture(tex, texcoord1).r;
+             } else {
+                 u = evenfield.r;
+                 v = texture(tex, texcoord1).r;
+             }
+         }
+
+         y = clamp(y, 0.06274509803922, 0.94117647058824);
+         u = clamp(u, 0.06274509803922, 0.92156862745098) - 0.5;
+         v = clamp(v, 0.06274509803922, 0.92156862745098) - 0.5;
+         y = 1.164 * (y - 0.06274509803922);
+         fragColor.r = clamp(y + 1.793 * v, 0.0, 1.0);
+         fragColor.g = clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
+         fragColor.b = clamp(y + 2.155 * u, 0.0, 1.0);
+         fragColor.a = 1.0;
+     }
+     );
+    
+    string frag_prog150 = "#version 150\n";
+    frag_prog150 += STRINGIFY
+    (
+     in vec2 texCoordVarying;
+     
+     out vec4 fragColor;
+     
+     uniform sampler2DRect tex;
+     
+     void main (void){
+         float isodd_x = mod(texCoordVarying.x, 2.0);
+         vec2 texcoord0 = texCoordVarying.xy;
+         vec2 texcoord1 = texcoord0 + vec2(1.0, 0.0);
+         float y = 0.0;
+         float u = 0.0;
+         float v = 0.0;
+         
+         vec4 evenfield = texture(tex, texcoord0);
+         y = evenfield.a;
+         if (isodd_x >= 1.0) {
+             v = evenfield.r;
+             u = texture(tex, texcoord1).r;
+         } else {
+             u = evenfield.r;
+             v = texture(tex, texcoord1).r;
+         }
+         y = clamp(y, 0.06274509803922, 0.94117647058824);
+         u = clamp(u, 0.06274509803922, 0.92156862745098) - 0.5;
+         v = clamp(v, 0.06274509803922, 0.92156862745098) - 0.5;
+         y = 1.164 * (y - 0.06274509803922);
+         fragColor.r = clamp(y + 1.793 * v, 0.0, 1.0);
+         fragColor.g = clamp(y - 0.213 * u - 0.534 * v, 0.0, 1.0);
+         fragColor.b = clamp(y + 2.155 * u, 0.0, 1.0);
+         fragColor.a = 1.0;
+     }
+     );
+
+    
+    string frag_argb_150 = "#version 150\n";
+    frag_argb_150 += STRINGIFY
+    (
+     in vec2 texCoordVarying;
+     
+     out vec4 fragColor;
+     
+     uniform sampler2DRect tex;
+     uniform int use_odd;
+     
+     void main (void){
+         float isodd_y = mod(texCoordVarying.y, 2.0);
+         vec2 texcoord0 = texCoordVarying.xy;
+         vec3 rgb;
+         vec4 evenfield;
+         if((bool(use_odd) && isodd_y < 1.0) || (!bool(use_odd) && isodd_y >= 1.0)){
+             evenfield = texture(tex, vec2(texcoord0.x, texcoord0.y + 1.0));
+             vec4 evenfield_2 = texture(tex, vec2(texcoord0.x, texcoord0.y - 1.0));
+             rgb = mix(evenfield.rgb, evenfield_2.rgb, 0.5);
+         } else {
+             evenfield = texture2DRect(tex, texcoord0);
+             rgb = evenfield.rgb;
+         }
+         fragColor.rgb = rgb;
+         fragColor.a = 1.0;
+     }
+     );
+    
+    string frag_argb_prog_150 = "#version 150\n";
+    frag_argb_prog_150 += STRINGIFY
+    (
+     in vec2 texCoordVarying;
+     
+     out vec4 fragColor;
+     
+     uniform sampler2DRect tex;
+     
+     void main (void){
+         fragColor = texture(tex,texCoordVarying);
+         fragColor.a = 1.0;
+     }
+     );
+    
+    if(ofIsGLProgrammableRenderer()){
+        shader.setupShaderFromSource(GL_VERTEX_SHADER, vert150);
+        shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag150);
+        shader.bindDefaults();
+        
+        shader_prog.setupShaderFromSource(GL_VERTEX_SHADER, vert150);
+        shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog150);
+        shader_prog.bindDefaults();
+        
+        shader_argb.setupShaderFromSource(GL_VERTEX_SHADER, vert150);
+        shader_argb.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb_150);
+        shader_argb.bindDefaults();
+        
+        shader_argb_prog.setupShaderFromSource(GL_VERTEX_SHADER, vert150);
+        shader_argb_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb_prog_150);
+        shader_argb_prog.bindDefaults();
+        
+    }else{
+        shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
+        shader_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_prog);
+        
+        shader_argb.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb);
+        shader_argb_prog.setupShaderFromSource(GL_FRAGMENT_SHADER, frag_argb_prog);
+    }
+    shader.linkProgram();
+    shader_prog.linkProgram();
+    shader_argb.linkProgram();
     shader_argb_prog.linkProgram();
+
     
 	this->device_id = device_id;
 
