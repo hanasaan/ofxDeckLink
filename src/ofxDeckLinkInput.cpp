@@ -270,7 +270,7 @@ bool Input::setup(int device_id)
              vec4 evenfield_2 = texture(tex, vec2(texcoord0.x, texcoord0.y - 1.0));
              rgb = mix(evenfield.rgb, evenfield_2.rgb, 0.5);
          } else {
-             evenfield = texture2DRect(tex, texcoord0);
+             evenfield = texture(tex, texcoord0);
              rgb = evenfield.rgb;
          }
          fragColor.rgb = rgb;
@@ -286,9 +286,11 @@ bool Input::setup(int device_id)
      out vec4 fragColor;
      
      uniform sampler2DRect tex;
+     uniform int use_odd;
      
      void main (void){
-         fragColor = texture(tex,texCoordVarying);
+         vec2 texcoord0 = texCoordVarying.xy;
+         fragColor = texture(tex, texcoord0);
          fragColor.a = 1.0;
      }
      );
