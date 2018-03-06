@@ -73,7 +73,7 @@ Timecode::Timecode()
     minutes = 0;
     seconds = 0;
     frames = 0;
-    b_drop_frame = true;
+    b_drop_frame = false;
 }
 
 int Timecode::toFrameNum(int timebase) const
