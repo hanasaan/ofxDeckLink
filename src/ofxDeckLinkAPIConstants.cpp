@@ -107,14 +107,14 @@ string Timecode::toString() const
     }
 }
 
-inline bool Timecode::operator==( const Timecode& vec ) const {
+bool Timecode::operator==( const Timecode& vec ) const {
     return (hours == vec.hours)
     && (minutes == vec.minutes)
     && (seconds == vec.seconds)
     && (frames == vec.frames);
 }
 
-inline bool Timecode::operator!=( const Timecode& vec ) const {
+bool Timecode::operator!=( const Timecode& vec ) const {
     return (hours != vec.hours)
     || (minutes != vec.minutes)
     || (seconds != vec.seconds)
