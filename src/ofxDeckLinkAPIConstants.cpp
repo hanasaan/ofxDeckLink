@@ -90,5 +90,36 @@ int Timecode::toFrameNum(int timebase) const
     return num;
 }
 
+string Timecode::toString() const
+{
+    if (b_drop_frame) {
+        return ofVAArgsToString("%02d:%02d:%02d;%02d",
+                                hours,
+                                minutes,
+                                seconds,
+                                frames);
+    } else {
+        return ofVAArgsToString("%02d:%02d:%02d:%02d",
+                                hours,
+                                minutes,
+                                seconds,
+                                frames);
+    }
+}
+
+inline bool Timecode::operator==( const Timecode& vec ) const {
+    return (hours == vec.hours)
+    && (minutes == vec.minutes)
+    && (seconds == vec.seconds)
+    && (frames == vec.frames);
+}
+
+inline bool Timecode::operator!=( const Timecode& vec ) const {
+    return (hours != vec.hours)
+    || (minutes != vec.minutes)
+    || (seconds != vec.seconds)
+    || (frames != vec.frames);
+}
+
 
 OFX_DECKLINK_API_END_NAMESPACE

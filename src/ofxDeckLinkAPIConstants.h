@@ -23,6 +23,10 @@ struct Timecode
     Timecode();
     
     int toFrameNum(int timebase) const;
+    string toString() const;
+    
+    bool operator==( const Timecode& vec ) const;
+    bool operator!=( const Timecode& vec ) const;
 };
 
 OFX_DECKLINK_API_END_NAMESPACE

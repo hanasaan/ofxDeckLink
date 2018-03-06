@@ -821,19 +821,7 @@ string Input::getDrawModeString() const
 
 string Input::getTimecodeString() const
 {
-    if (tc_front.b_drop_frame) {
-        return ofVAArgsToString("%02d:%02d:%02d;%02d",
-                                tc_front.hours,
-                                tc_front.minutes,
-                                tc_front.seconds,
-                                tc_front.frames);
-    } else {
-        return ofVAArgsToString("%02d:%02d:%02d:%02d",
-                                tc_front.hours,
-                                tc_front.minutes,
-                                tc_front.seconds,
-                                tc_front.frames);
-    }
+    return tc_front.toString();
 }
 
 
