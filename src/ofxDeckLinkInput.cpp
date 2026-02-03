@@ -641,6 +641,8 @@ HRESULT Input::VideoInputFormatChanged(BMDVideoInputFormatChangedEvents notifica
     
     // Start video capture
     pDLInput->StartStreams();
+
+    return S_OK;
 }
 
 HRESULT Input::VideoInputFrameArrived(IDeckLinkVideoInputFrame* videoFrame, IDeckLinkAudioInputPacket* audioPacket)
